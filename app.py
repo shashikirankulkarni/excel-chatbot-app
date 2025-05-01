@@ -33,29 +33,20 @@ if uploaded_file:
             return df.iloc[top_indices]
 
         def call_cohere_chat(query, context_df):
-            qa_lines = []
-            for q, a in zip(context_df['Question'], context_df['Answer']):
-                if q and a:
-                    qa_lines.append(f"Q: {q}\nA: {a}")
-            qa_context = "\n\n".join(qa_lines)
-
-            prompt = f"""You are a helpful assistant. Answer ONLY based on the following Q&A pairs.
-If the answer is not available in this data, say: "I don't know."
-
-Q&A Context:
-{qa_context}
-
-User: {query}
-Answer:"""
+            documents = [
+                {"title": f"Q{i+1}", "snippet": f"Q: {q}\nA: {a}"}
+                for i, (q, a) in enumerate(zip(context_df['Question'], context_df['Answer']))
+                if q and a
+            ]
 
             try:
-                response = co.generate(
+                response = co.chat(
                     model="command-r",
-                    prompt=prompt,
-                    max_tokens=200,
+                    message=query,
+                    documents=documents,
                     temperature=0.3
                 )
-                return response.generations[0].text.strip()
+                return response.text.strip()
             except Exception as e:
                 return f"[Cohere API Error] {e}"
 
