@@ -39,7 +39,7 @@ if uploaded_file:
             ]
             try:
                 response = co.chat(
-                    model="command-r+",
+                    model="command-r",
                     message=query,
                     documents=documents,
                     temperature=0.3
