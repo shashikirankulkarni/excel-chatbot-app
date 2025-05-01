@@ -39,6 +39,9 @@ if uploaded_file:
                 if q and a
             ]
 
+            if len(documents) == 0:
+                return "I don't know."
+
             try:
                 response = co.chat(
                     model="command-r",
@@ -46,7 +49,13 @@ if uploaded_file:
                     documents=documents,
                     temperature=0.3
                 )
-                return response.text.strip()
+                reply = response.text.strip()
+
+                # If model didn't actually find a match, override it
+                if "today is" in query.lower() and not any("date" in q.lower() or "today" in q.lower() for q in context_df['Question']):
+                    return "I don't know."
+
+                return reply
             except Exception as e:
                 return f"[Cohere API Error] {e}"
 
