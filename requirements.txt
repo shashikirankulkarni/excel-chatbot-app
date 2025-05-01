@@ -1,6 +1,6 @@
 streamlit
 pandas
+cohere
 sentence-transformers
 faiss-cpu
-requests
 openpyxl

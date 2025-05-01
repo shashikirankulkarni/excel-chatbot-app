@@ -1,12 +1,14 @@
 import streamlit as st
 import pandas as pd
+import cohere
+import os
 from sentence_transformers import SentenceTransformer, util
-import faiss
-import numpy as np
-import requests
 
-st.set_page_config(page_title="Excel Q&A Chatbot", layout="centered")
-st.title("📊 Excel Q&A Chatbot")
+st.set_page_config(page_title="Q&A Chatbot (Cohere)", layout="centered")
+st.title("🤖 Chatbot from Uploaded File (Cohere)")
+
+COHERE_API_KEY = st.secrets.get("HA74wQKrs807W5dhMgSIEsrlr10AlRlox2YjtNXY")
+co = cohere.Client(COHERE_API_KEY)
 
 uploaded_file = st.file_uploader("Upload Excel (2 columns: 'Question', 'Answer')", type=["xlsx"])
 
@@ -21,32 +23,33 @@ if uploaded_file:
     if not {'Question', 'Answer'}.issubset(df.columns):
         st.error("Excel must contain 'Question' and 'Answer' columns")
     else:
-        questions = df['Question'].tolist()
-        question_embeddings = model.encode(questions, convert_to_numpy=True)
-
-        index = faiss.IndexFlatL2(question_embeddings.shape[1])
-        index.add(np.array(question_embeddings))
+        st.success("File loaded. Ask your question below.")
 
         def search_context(query, top_k=3):
-            query_embedding = model.encode([query], convert_to_numpy=True)
-            D, I = index.search(query_embedding, top_k)
-            return df.iloc[I[0]]
+            query_embedding = model.encode([query], convert_to_tensor=True)
+            corpus_embeddings = model.encode(df['Question'].tolist(), convert_to_tensor=True)
+            results = util.semantic_search(query_embedding, corpus_embeddings, top_k=top_k)
+            top_indices = [hit['corpus_id'] for hit in results[0]]
+            return df.iloc[top_indices]
 
-        def get_answer_with_ollama(query, context_df):
-            context = "\n".join([f"Q: {q}\nA: {a}" for q, a in zip(context_df['Question'], context_df['Answer'])])
-            prompt = f"""Answer based ONLY on the following Q&A context. If not found, say \"I don't know.\"\n\nContext:\n{context}\n\nUser: {query}\nAnswer:"""
+        def call_cohere_chat(query, context_df):
+            documents = [
+                {"title": f"Q{i+1}", "snippet": f"Q: {q}\nA: {a}"}
+                for i, (q, a) in enumerate(zip(context_df['Question'], context_df['Answer']))
+            ]
             try:
-                res = requests.post("http://localhost:11434/api/generate", json={
-                    "model": "mistral",
-                    "prompt": prompt
-                })
-                return res.json().get('response', '[Error getting response]')
+                response = co.chat(
+                    model="command-r+",
+                    message=query,
+                    documents=documents,
+                    temperature=0.3
+                )
+                return response.text
             except Exception as e:
-                return f"Error connecting to LLM: {str(e)}"
+                return f"[Cohere API Error] {e}"
 
-        st.success("Excel loaded. Ask your question below.")
-        query = st.text_input("Your Question")
+        query = st.text_input("Ask your question")
         if query:
             context_df = search_context(query)
-            answer = get_answer_with_ollama(query, context_df)
+            answer = call_cohere_chat(query, context_df)
             st.markdown(f"**Answer:** {answer}")
