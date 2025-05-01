@@ -7,7 +7,7 @@ from sentence_transformers import SentenceTransformer, util
 st.set_page_config(page_title="Q&A Chatbot (Cohere)", layout="centered")
 st.title("🤖 Chatbot from Uploaded File (Cohere)")
 
-COHERE_API_KEY = st.secrets.get("HA74wQKrs807W5dhMgSIEsrlr10AlRlox2YjtNXY")
+COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
 
 uploaded_file = st.file_uploader("Upload Excel (2 columns: 'Question', 'Answer')", type=["xlsx"])
