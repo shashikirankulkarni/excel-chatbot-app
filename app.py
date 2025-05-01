@@ -33,29 +33,28 @@ if uploaded_file:
             return df.iloc[top_indices]
 
         def call_cohere_chat(query, context_df):
-            documents = [
-                {"title": f"Q{i+1}", "snippet": f"Q: {q}\nA: {a}"}
-                for i, (q, a) in enumerate(zip(context_df['Question'], context_df['Answer']))
-                if q and a
-            ]
+            # Build the Q&A context from the DataFrame
+            qa_lines = []
+            for q, a in zip(context_df['Question'], context_df['Answer']):
+                if pd.notna(q) and pd.notna(a):
+                    qa_lines.append(f"Q: {q}\nA: {a}")
+            qa_context = "\n\n".join(qa_lines)
 
-            if len(documents) == 0:
-                return "I don't know."
+            # Set a preamble to instruct the model's behavior
+            preamble = (
+                "You are a helpful assistant. Answer ONLY based on the following Q&A pairs. "
+                "If the answer is not available in this data, say: 'I don't know.'"
+            )
 
             try:
                 response = co.chat(
                     model="command-r",
                     message=query,
-                    documents=documents,
+                    documents=[{"title": f"Q{i+1}", "snippet": f"Q: {q}\nA: {a}"} for i, (q, a) in enumerate(zip(context_df['Question'], context_df['Answer'])) if pd.notna(q) and pd.notna(a)],
+                    preamble=preamble,
                     temperature=0.3
                 )
-                reply = response.text.strip()
-
-                # If model didn't actually find a match, override it
-                if "today is" in query.lower() and not any("date" in q.lower() or "today" in q.lower() for q in context_df['Question']):
-                    return "I don't know."
-
-                return reply
+                return response.text.strip()
             except Exception as e:
                 return f"[Cohere API Error] {e}"
 
