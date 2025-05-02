@@ -16,6 +16,8 @@ if "df_data" not in st.session_state:
     st.session_state.df_data = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "pending_query" not in st.session_state:
+    st.session_state.pending_query = None
 
 excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
 if st.button("🔄 Sync File"):
@@ -93,11 +95,8 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    if "pending_query" not in st.session_state:
-        st.session_state.pending_query = None
-
-    # FORM for input capture
-    with st.form(key="chat_form", clear_on_submit=True):
+    # FORM to capture user input
+    with st.form("chat_form", clear_on_submit=True):
         col1, col2 = st.columns([4, 1])
         with col1:
             query = st.text_input("Type your message", key="query_input")
@@ -107,10 +106,11 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         if submitted and query.strip():
             st.session_state.pending_query = query
 
-    # Process pending query (runs *after* form render)
+    # PROCESS after rerun
     if st.session_state.pending_query:
-        st.session_state.chat_history.append(("user", st.session_state.pending_query))
-        ctx = search_context(st.session_state.pending_query)
-        response = call_cohere_chat(st.session_state.pending_query, ctx)
-        st.session_state.chat_history.append(("bot", response))
-        st.session_state.pending_query = None  # clear after use
+        q = st.session_state.pending_query
+        st.session_state.chat_history.append(("user", q))
+        context_df = search_context(q)
+        answer = call_cohere_chat(q, context_df)
+        st.session_state.chat_history.append(("bot", answer))
+        st.session_state.pending_query = None
