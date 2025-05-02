@@ -7,17 +7,19 @@ from io import BytesIO
 from datetime import datetime
 from sentence_transformers import SentenceTransformer, util
 
-st.set_page_config(page_title="Smart Query Bot", layout="centered")
+st.set_page_config(page_title="WhatsApp-style Chatbot", layout="centered")
+st.title("💬 WhatsApp-Style Q&A Chatbot")
 
 COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
 
-st.title("💬 Smart Query Bot")
-
+# Initialize session state
 if "df_data" not in st.session_state:
     st.session_state.df_data = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "chat_input" not in st.session_state:
+    st.session_state.chat_input = ""
 
 excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
 if st.button("🔄 Sync File"):
@@ -94,16 +96,14 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
             f"{message}</div>",
             unsafe_allow_html=True
         )
-
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # Input field at the bottom
-    with st.form("chat_form", clear_on_submit=True):
-        user_input = st.text_input("Type your message", "")
-        submitted = st.form_submit_button("Send")
-
-    if submitted and user_input:
-        st.session_state.chat_history.append(("user", user_input))
-        context_df = search_context(user_input)
-        response = call_cohere_chat(user_input, context_df)
-        st.session_state.chat_history.append(("bot", response))
+    # Chat input
+    user_query = st.text_input("Type your message", key="chat_input")
+    if st.button("Send") and user_query.strip():
+        st.session_state.chat_history.append(("user", user_query))
+        context_df = search_context(user_query)
+        answer = call_cohere_chat(user_query, context_df)
+        st.session_state.chat_history.append(("bot", answer))
+        st.session_state.chat_input = ""
+        st.experimental_rerun()
