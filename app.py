@@ -4,7 +4,6 @@ import cohere
 import os
 import requests
 from io import BytesIO
-from uuid import uuid4
 from sentence_transformers import SentenceTransformer, util
 
 st.set_page_config(page_title="WhatsApp-style Chatbot", layout="centered")
@@ -83,7 +82,6 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
     st.markdown("---")
     st.subheader("🟢 Chat")
 
-    # Display chat history
     for role, message in st.session_state.chat_history:
         align = "right" if role == "user" else "left"
         bg = "#dcf8c6" if role == "user" else "#f1f0f0"
@@ -95,15 +93,16 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
+    # Final working input: use form to isolate input and send logic
     with st.form(key="chat_form", clear_on_submit=True):
         col1, col2 = st.columns([4, 1])
         with col1:
-            user_query = st.text_input("Type your message", key="chat_input")
+            query = st.text_input("Type your message", key="query_input")
         with col2:
-            send_pressed = st.form_submit_button("Send")
+            submit = st.form_submit_button("Send")
 
-        if send_pressed and user_query.strip():
-            st.session_state.chat_history.append(("user", user_query))
-            context_df = search_context(user_query)
-            answer = call_cohere_chat(user_query, context_df)
-            st.session_state.chat_history.append(("bot", answer))
+        if submit and query.strip():
+            st.session_state.chat_history.append(("user", query))
+            context_df = search_context(query)
+            response = call_cohere_chat(query, context_df)
+            st.session_state.chat_history.append(("bot", response))
