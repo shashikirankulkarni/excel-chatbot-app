@@ -3,6 +3,7 @@ import pandas as pd
 import cohere
 import os
 import requests
+import random
 from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
@@ -16,8 +17,6 @@ if "df_data" not in st.session_state:
     st.session_state.df_data = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if "pending_query" not in st.session_state:
-    st.session_state.pending_query = None
 
 excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
 if st.button("🔄 Sync File"):
@@ -95,18 +94,14 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    if "chat_input" not in st.session_state:
-        st.session_state.chat_input = ""
-
+    # Dynamic input key to reset after each send
+    input_key = f"user_input_{len(st.session_state.chat_history)}_{random.randint(1000,9999)}"
     col1, col2 = st.columns([4, 1])
     with col1:
-        st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
+        user_query = st.text_input("Type your message", label_visibility="collapsed", key=input_key)
     with col2:
-        if st.button("Send"):
-            query = st.session_state.chat_input.strip()
-            if query:
-                st.session_state.chat_history.append(("user", query))
-                context_df = search_context(query)
-                answer = call_cohere_chat(query, context_df)
-                st.session_state.chat_history.append(("bot", answer))
-                st.session_state.chat_input = ""  # clear it here
+        if st.button("Send", key=f"send_button_{input_key}") and user_query.strip():
+            st.session_state.chat_history.append(("user", user_query.strip()))
+            ctx = search_context(user_query.strip())
+            answer = call_cohere_chat(user_query.strip(), ctx)
+            st.session_state.chat_history.append(("bot", answer))
