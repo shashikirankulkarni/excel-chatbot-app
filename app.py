@@ -9,7 +9,25 @@ from sentence_transformers import SentenceTransformer, util
 
 st.set_page_config(page_title="Smart Query Bot", layout="centered")
 st.title("💬 Smart Query Bot")
-st.markdown("<div style='font-size:14px; color:gray;'>Built by <b>Shashikiran Kulkarni</b></div>", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #f0f2f6;
+        color: #555;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+        border-top: 1px solid #ddd;
+    }
+    </style>
+    <div class="footer">
+        Built by <strong>Shashikiran Kulkarni</strong>
+    </div>
+""", unsafe_allow_html=True)
 
 COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
