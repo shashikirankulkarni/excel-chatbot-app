@@ -2,15 +2,42 @@ import streamlit as st
 import pandas as pd
 import cohere
 import os
+import requests
+from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 st.set_page_config(page_title="Q&A Chatbot (Cohere)", layout="centered")
-st.title("🤖 Chatbot from Uploaded File (Cohere)")
+st.title("🤖 Chatbot from Shared Link (Cohere)")
 
 COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
 
-uploaded_file = st.file_uploader("Upload Excel (2 columns: 'Question', 'Answer')", type=["xlsx"])
+# UI: Paste link to public Excel file
+excel_url = st.text_input("Paste a public Excel file URL (Google Drive, Dropbox, etc.)")
+sync_clicked = st.button("🔄 Sync")
+
+df = None
+if sync_clicked:
+    if not excel_url:
+        st.warning("Please paste a valid public link to an Excel file.")
+    else:
+        try:
+            # Attempt to download and read the file
+            if "drive.google.com" in excel_url and "uc?export=download" not in excel_url:
+                file_id = excel_url.split("/d/")[1].split("/")[0]
+                excel_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            elif "dropbox.com" in excel_url:
+                excel_url = excel_url.replace("?dl=0", "?dl=1")
+            elif "1drv.ms" in excel_url:
+                st.warning("OneDrive short links may not work. Try getting a direct Excel download link.")
+
+            response = requests.get(excel_url, timeout=15)
+            response.raise_for_status()
+            df = pd.read_excel(BytesIO(response.content))
+            st.success("✅ Excel file synced successfully!")
+
+        except Exception as e:
+            st.error(f"❌ Failed to fetch or read Excel file: {e}")
 
 @st.cache_resource
 def load_model():
@@ -18,12 +45,11 @@ def load_model():
 
 model = load_model()
 
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+if df is not None:
     if not {'Question', 'Answer'}.issubset(df.columns):
         st.error("Excel must contain 'Question' and 'Answer' columns")
     else:
-        st.success("File loaded. Ask your question below.")
+        st.subheader("Ask Your Question")
 
         def search_context(query, top_k=3):
             query_embedding = model.encode([query], convert_to_tensor=True)
@@ -33,14 +59,12 @@ if uploaded_file:
             return df.iloc[top_indices]
 
         def call_cohere_chat(query, context_df):
-            # Build the Q&A context from the DataFrame
-            qa_lines = []
-            for q, a in zip(context_df['Question'], context_df['Answer']):
-                if pd.notna(q) and pd.notna(a):
-                    qa_lines.append(f"Q: {q}\nA: {a}")
-            qa_context = "\n\n".join(qa_lines)
+            documents = [
+                {"title": f"Q{i+1}", "snippet": f"Q: {q}\nA: {a}"}
+                for i, (q, a) in enumerate(zip(context_df['Question'], context_df['Answer']))
+                if pd.notna(q) and pd.notna(a)
+            ]
 
-            # Set a preamble to instruct the model's behavior
             preamble = (
                 "You are a helpful assistant. Answer ONLY based on the following Q&A pairs. "
                 "If the answer is not available in this data, say: 'I don't know.'"
@@ -50,7 +74,7 @@ if uploaded_file:
                 response = co.chat(
                     model="command-r",
                     message=query,
-                    documents=[{"title": f"Q{i+1}", "snippet": f"Q: {q}\nA: {a}"} for i, (q, a) in enumerate(zip(context_df['Question'], context_df['Answer'])) if pd.notna(q) and pd.notna(a)],
+                    documents=documents,
                     preamble=preamble,
                     temperature=0.3
                 )
@@ -58,7 +82,7 @@ if uploaded_file:
             except Exception as e:
                 return f"[Cohere API Error] {e}"
 
-        query = st.text_input("Ask your question")
+        query = st.text_input("Enter your question")
         if query:
             context_df = search_context(query)
             answer = call_cohere_chat(query, context_df)
