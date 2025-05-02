@@ -93,16 +93,24 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # Final working input: use form to isolate input and send logic
+    if "pending_query" not in st.session_state:
+        st.session_state.pending_query = None
+
+    # FORM for input capture
     with st.form(key="chat_form", clear_on_submit=True):
         col1, col2 = st.columns([4, 1])
         with col1:
             query = st.text_input("Type your message", key="query_input")
         with col2:
-            submit = st.form_submit_button("Send")
+            submitted = st.form_submit_button("Send")
 
-        if submit and query.strip():
-            st.session_state.chat_history.append(("user", query))
-            context_df = search_context(query)
-            response = call_cohere_chat(query, context_df)
-            st.session_state.chat_history.append(("bot", response))
+        if submitted and query.strip():
+            st.session_state.pending_query = query
+
+    # Process pending query (runs *after* form render)
+    if st.session_state.pending_query:
+        st.session_state.chat_history.append(("user", st.session_state.pending_query))
+        ctx = search_context(st.session_state.pending_query)
+        response = call_cohere_chat(st.session_state.pending_query, ctx)
+        st.session_state.chat_history.append(("bot", response))
+        st.session_state.pending_query = None  # clear after use
