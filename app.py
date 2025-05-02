@@ -95,13 +95,12 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # Input with UUID to force clear after submission
-    unique_key = str(uuid4())
+    with st.form(key="chat_form", clear_on_submit=True):
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_query = st.text_input("Type your message", label_visibility="collapsed", key=unique_key)
+        user_query = st.text_input("Type your message", key="user_input")
     with col2:
-        send_pressed = st.button("Send", key="send_button")
+        send_pressed = st.form_submit_button("Send")
 
     if send_pressed and user_query.strip():
         st.session_state.chat_history.append(("user", user_query))
