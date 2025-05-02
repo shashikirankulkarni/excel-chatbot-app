@@ -95,22 +95,18 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # FORM to capture user input
-    with st.form("chat_form", clear_on_submit=True):
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            query = st.text_input("Type your message", key="query_input")
-        with col2:
-            submitted = st.form_submit_button("Send")
+    if "chat_input" not in st.session_state:
+        st.session_state.chat_input = ""
 
-        if submitted and query.strip():
-            st.session_state.pending_query = query
-
-    # PROCESS after rerun
-    if st.session_state.pending_query:
-        q = st.session_state.pending_query
-        st.session_state.chat_history.append(("user", q))
-        context_df = search_context(q)
-        answer = call_cohere_chat(q, context_df)
-        st.session_state.chat_history.append(("bot", answer))
-        st.session_state.pending_query = None
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
+    with col2:
+        if st.button("Send"):
+            query = st.session_state.chat_input.strip()
+            if query:
+                st.session_state.chat_history.append(("user", query))
+                context_df = search_context(query)
+                answer = call_cohere_chat(query, context_df)
+                st.session_state.chat_history.append(("bot", answer))
+                st.session_state.chat_input = ""  # clear it here
