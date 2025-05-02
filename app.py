@@ -99,7 +99,7 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
     # Chat input and send button
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_input = st.text_input("Type your message", label_visibility="collapsed", key="chat_input")
+        user_input = st.text_input("Type your message", value="", label_visibility="collapsed", key="user_input")
     with col2:
         send_pressed = st.button("Send")
 
@@ -108,5 +108,3 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         context_df = search_context(user_input)
         answer = call_cohere_chat(user_input, context_df)
         st.session_state.chat_history.append(("bot", answer))
-        st.session_state.chat_input = ""
-        st.experimental_rerun()
