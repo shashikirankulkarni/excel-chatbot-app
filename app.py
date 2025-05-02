@@ -106,14 +106,14 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         with col3:
             clear_clicked = st.form_submit_button("🗑️")
 
-        if submitted and query.strip():
-            st.session_state.chat_history.append(("user", query.strip()))
-            context_df = search_context(query.strip())
-            answer = call_cohere_chat(query.strip(), context_df)
-            st.session_state.chat_history.append(("bot", answer))
-            st.rerun()
+    # Process after form submission
+    if submitted and query.strip():
+        st.session_state.chat_history.append(("user", query.strip()))
+        context_df = search_context(query.strip())
+        answer = call_cohere_chat(query.strip(), context_df)
+        st.session_state.chat_history.append(("bot", answer))
+        st.rerun()
 
-        if clear_clicked:
-            st.session_state.chat_history = []
-            st.session_state.chat_input = ""
-            st.rerun()
+    if clear_clicked:
+        st.session_state.chat_history = []
+        st.rerun()  # no need to clear st.session_state.chat_input
