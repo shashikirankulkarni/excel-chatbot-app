@@ -94,14 +94,20 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # Dynamic input key to reset after each send
-    input_key = f"user_input_{len(st.session_state.chat_history)}_{random.randint(1000,9999)}"
+    if "chat_input" not in st.session_state:
+        st.session_state.chat_input = ""
+
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_query = st.text_input("Type your message", label_visibility="collapsed", key=input_key)
+        query = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
     with col2:
-        if st.button("Send", key=f"send_button_{input_key}") and user_query.strip():
-            st.session_state.chat_history.append(("user", user_query.strip()))
-            ctx = search_context(user_query.strip())
-            answer = call_cohere_chat(user_query.strip(), ctx)
+        send_clicked = st.button("Send")
+
+    if send_clicked:
+        if query.strip():
+            st.session_state.chat_history.append(("user", query.strip()))
+            ctx = search_context(query.strip())
+            answer = call_cohere_chat(query.strip(), ctx)
             st.session_state.chat_history.append(("bot", answer))
+        # Use an empty form field trick to reset value
+        st.session_state.chat_input = " "  # causes input to look blank on next render
