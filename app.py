@@ -18,8 +18,11 @@ if "df_data" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
-if st.button("🔄 Sync File"):
+with st.form("url_form"):
+   excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
+    sync_clicked = st.form_submit_button("🔄 Sync File")
+
+if sync_clicked:
     try:
         if "docs.google.com/spreadsheets" in excel_url:
             file_id = excel_url.split("/d/")[1].split("/")[0]
