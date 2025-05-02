@@ -19,7 +19,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 with st.form("url_form"):
-   excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
+    excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
     sync_clicked = st.form_submit_button("🔄 Sync File")
 
 if sync_clicked:
