@@ -12,54 +12,47 @@ st.title("🤖 Chatbot from Shared Link (Cohere)")
 COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
 
-# UI: Paste link to public Excel file
-excel_url = st.text_input("Paste a public Excel file URL (Google Drive, Dropbox, etc.)")
+# Initialize persistent data
+if "df_data" not in st.session_state:
+    st.session_state.df_data = None
+if "query" not in st.session_state:
+    st.session_state.query = ""
+
+excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
 sync_clicked = st.button("🔄 Sync")
 
-df = None
-if sync_clicked:
-    if not excel_url:
-        st.warning("Please paste a valid public link to an Excel file.")
-    else:
-        try:
-            try:
-                # Auto-handle Google Sheets, CSV, Excel
-                if "docs.google.com/spreadsheets" in excel_url:
-                    file_id = excel_url.split("/d/")[1].split("/")[0]
-                    csv_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
-                    df = pd.read_csv(BytesIO(requests.get(csv_url).content))
-                elif excel_url.endswith(".csv"):
-                    df = pd.read_csv(BytesIO(requests.get(excel_url).content))
-                else:
-                    if "drive.google.com" in excel_url and "uc?export=download" not in excel_url:
-                        file_id = excel_url.split("/d/")[1].split("/")[0]
-                        excel_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-                    elif "dropbox.com" in excel_url:
-                        excel_url = excel_url.replace("?dl=0", "?dl=1")
-                    response = requests.get(excel_url, timeout=15)
-                    response.raise_for_status()
-                    df = pd.read_excel(BytesIO(response.content))
-                st.success("✅ File loaded successfully!")
-            except Exception as e:
-                st.error(f"❌ Failed to fetch or read Excel file: {e}")
-
+if sync_clicked and excel_url:
+    try:
+        if "docs.google.com/spreadsheets" in excel_url:
+            file_id = excel_url.split("/d/")[1].split("/")[0]
+            csv_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
+            df = pd.read_csv(BytesIO(requests.get(csv_url).content))
+        elif excel_url.endswith(".csv"):
+            df = pd.read_csv(BytesIO(requests.get(excel_url).content))
+        else:
+            if "drive.google.com" in excel_url and "uc?export=download" not in excel_url:
+                file_id = excel_url.split("/d/")[1].split("/")[0]
+                excel_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            elif "dropbox.com" in excel_url:
+                excel_url = excel_url.replace("?dl=0", "?dl=1")
             response = requests.get(excel_url, timeout=15)
             response.raise_for_status()
-            df = pd.read_excel(BytesIO(response.content))
-            st.success("✅ Excel file synced successfully!")
-
-        except Exception as e:
-            st.error(f"❌ Failed to fetch or read Excel file: {e}")
+            df = pd.read_excel(BytesIO(response.content), engine='openpyxl')
+        st.session_state.df_data = df
+        st.success("✅ File loaded successfully!")
+    except Exception as e:
+        st.error(f"❌ Failed to fetch or read Excel file: {e}")
 
 @st.cache_resource
 def load_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
 model = load_model()
+df = st.session_state.get("df_data")
 
 if df is not None:
     if not {'Question', 'Answer'}.issubset(df.columns):
-        st.error("Excel must contain 'Question' and 'Answer' columns")
+        st.error("Excel must contain 'Question' and 'Answer' columns.")
     else:
         st.subheader("Ask Your Question")
 
@@ -94,8 +87,8 @@ if df is not None:
             except Exception as e:
                 return f"[Cohere API Error] {e}"
 
-        query = st.text_input("Enter your question")
-        if query:
-            context_df = search_context(query)
-            answer = call_cohere_chat(query, context_df)
+        st.session_state.query = st.text_input("Enter your question", value=st.session_state.query)
+        if st.session_state.query:
+            context_df = search_context(st.session_state.query)
+            answer = call_cohere_chat(st.session_state.query, context_df)
             st.markdown(f"**Answer:** {answer}")
