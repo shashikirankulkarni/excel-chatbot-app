@@ -23,13 +23,15 @@ if sync_clicked:
     else:
         try:
             # Attempt to download and read the file
-            if "drive.google.com" in excel_url and "uc?export=download" not in excel_url:
-                file_id = excel_url.split("/d/")[1].split("/")[0]
-                excel_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-            elif "dropbox.com" in excel_url:
-                excel_url = excel_url.replace("?dl=0", "?dl=1")
-            elif "1drv.ms" in excel_url:
-                st.warning("OneDrive short links may not work. Try getting a direct Excel download link.")
+            if "docs.google.com/spreadsheets" in url:
+                # Convert Google Sheet to CSV
+                file_id = url.split("/d/")[1].split("/")[0]
+                csv_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
+                df = pd.read_csv(BytesIO(requests.get(csv_url).content))
+            elif url.endswith(".csv"):
+                df = pd.read_csv(BytesIO(requests.get(url).content))
+            else:
+                df = pd.read_excel(BytesIO(requests.get(url).content))
 
             response = requests.get(excel_url, timeout=15)
             response.raise_for_status()
