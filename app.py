@@ -7,8 +7,9 @@ import random
 from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
-st.set_page_config(page_title="WhatsApp-style Chatbot", layout="centered")
-st.title("💬 WhatsApp-Style Q&A Chatbot")
+st.set_page_config(page_title="Smart Query Bot", layout="centered")
+st.title("💬 Smart Query Bot")
+st.markdown("<div style='font-size:14px; color:gray;'>Built by <b>Shashikiran Kulkarni</b></div>", unsafe_allow_html=True)
 
 COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
