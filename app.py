@@ -101,8 +101,9 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
     with st.form("chat_form", clear_on_submit=True):
         user_input = st.text_input("Type your message", "")
         submitted = st.form_submit_button("Send")
-        if submitted and user_input:
-            st.session_state.chat_history.append(("user", user_input))
-            context_df = search_context(user_input)
-            response = call_cohere_chat(user_input, context_df)
-            st.session_state.chat_history.append(("bot", response))
+
+    if submitted and user_input:
+        st.session_state.chat_history.append(("user", user_input))
+        context_df = search_context(user_input)
+        response = call_cohere_chat(user_input, context_df)
+        st.session_state.chat_history.append(("bot", response))
