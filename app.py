@@ -95,6 +95,9 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
+    if "last_input" not in st.session_state:
+        st.session_state.last_input = ""
+
     col1, col2 = st.columns([4, 1])
     with col1:
         user_query = st.text_input("Type your message", key="text_query", label_visibility="collapsed", value=st.session_state.last_input)
@@ -102,7 +105,7 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         send_pressed = st.button("Send")
 
     if send_pressed and user_query.strip():
-        st.session_state.last_input = ""  # clear on next render
+        st.session_state.last_input = ""  # reset after using
         st.session_state.chat_history.append(("user", user_query))
         context_df = search_context(user_query)
         answer = call_cohere_chat(user_query, context_df)
