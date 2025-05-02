@@ -99,11 +99,11 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
     # Chat input
-    user_query = st.text_input("Type your message", key="chat_input")
+    user_query = st.text_input("Type your message", value="", key="user_input_box")
+
     if st.button("Send") and user_query.strip():
         st.session_state.chat_history.append(("user", user_query))
         context_df = search_context(user_query)
         answer = call_cohere_chat(user_query, context_df)
         st.session_state.chat_history.append(("bot", answer))
-        st.session_state.chat_input = ""
-        st.experimental_rerun()
+
