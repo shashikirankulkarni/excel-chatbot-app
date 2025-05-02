@@ -22,16 +22,26 @@ if sync_clicked:
         st.warning("Please paste a valid public link to an Excel file.")
     else:
         try:
-            # Attempt to download and read the file
-            if "docs.google.com/spreadsheets" in url:
-                # Convert Google Sheet to CSV
-                file_id = url.split("/d/")[1].split("/")[0]
-                csv_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
-                df = pd.read_csv(BytesIO(requests.get(csv_url).content))
-            elif url.endswith(".csv"):
-                df = pd.read_csv(BytesIO(requests.get(url).content))
-            else:
-                df = pd.read_excel(BytesIO(requests.get(url).content))
+            try:
+                # Auto-handle Google Sheets, CSV, Excel
+                if "docs.google.com/spreadsheets" in excel_url:
+                    file_id = excel_url.split("/d/")[1].split("/")[0]
+                    csv_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
+                    df = pd.read_csv(BytesIO(requests.get(csv_url).content))
+                elif excel_url.endswith(".csv"):
+                    df = pd.read_csv(BytesIO(requests.get(excel_url).content))
+                else:
+                    if "drive.google.com" in excel_url and "uc?export=download" not in excel_url:
+                        file_id = excel_url.split("/d/")[1].split("/")[0]
+                        excel_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+                    elif "dropbox.com" in excel_url:
+                        excel_url = excel_url.replace("?dl=0", "?dl=1")
+                    response = requests.get(excel_url, timeout=15)
+                    response.raise_for_status()
+                    df = pd.read_excel(BytesIO(response.content))
+                st.success("✅ File loaded successfully!")
+            except Exception as e:
+                st.error(f"❌ Failed to fetch or read Excel file: {e}")
 
             response = requests.get(excel_url, timeout=15)
             response.raise_for_status()
