@@ -18,8 +18,6 @@ if "df_data" not in st.session_state:
     st.session_state.df_data = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if "chat_input" not in st.session_state:
-    st.session_state.chat_input = ""
 
 excel_url = st.text_input("Paste a public Excel/CSV/Google Sheet URL:")
 if st.button("🔄 Sync File"):
@@ -98,12 +96,17 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # Chat input
-    user_query = st.text_input("Type your message", value="", key="user_input_box")
+    # Chat input and send button
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        user_input = st.text_input("Type your message", label_visibility="collapsed", key="chat_input")
+    with col2:
+        send_pressed = st.button("Send")
 
-    if st.button("Send") and user_query.strip():
-        st.session_state.chat_history.append(("user", user_query))
-        context_df = search_context(user_query)
-        answer = call_cohere_chat(user_query, context_df)
+    if send_pressed and user_input.strip():
+        st.session_state.chat_history.append(("user", user_input))
+        context_df = search_context(user_input)
+        answer = call_cohere_chat(user_input, context_df)
         st.session_state.chat_history.append(("bot", answer))
-
+        st.session_state.chat_input = ""
+        st.experimental_rerun()
