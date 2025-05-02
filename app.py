@@ -4,7 +4,6 @@ import cohere
 import os
 import requests
 from io import BytesIO
-from datetime import datetime
 from sentence_transformers import SentenceTransformer, util
 
 st.set_page_config(page_title="WhatsApp-style Chatbot", layout="centered")
@@ -13,7 +12,6 @@ st.title("💬 WhatsApp-Style Q&A Chatbot")
 COHERE_API_KEY = st.secrets.get("COHERE_API_KEY")
 co = cohere.Client(COHERE_API_KEY)
 
-# Initialize session state
 if "df_data" not in st.session_state:
     st.session_state.df_data = None
 if "chat_history" not in st.session_state:
@@ -84,7 +82,7 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
     st.markdown("---")
     st.subheader("🟢 Chat")
 
-    # Display chat history
+    # Show chat history
     for role, message in st.session_state.chat_history:
         align = "right" if role == "user" else "left"
         bg = "#dcf8c6" if role == "user" else "#f1f0f0"
@@ -96,15 +94,17 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    # Chat input and send button
+    # Input field with dynamic key so it's cleared after each message
+    user_query_key = f"user_input_{len(st.session_state.chat_history)}"
     col1, col2 = st.columns([4, 1])
     with col1:
-        user_input = st.text_input("Type your message", value="", label_visibility="collapsed", key="user_input")
+        user_query = st.text_input("Type your message", label_visibility="collapsed", key=user_query_key)
     with col2:
-        send_pressed = st.button("Send")
+        send_pressed = st.button("Send", key=f"send_{user_query_key}")
 
-    if send_pressed and user_input.strip():
-        st.session_state.chat_history.append(("user", user_input))
-        context_df = search_context(user_input)
-        answer = call_cohere_chat(user_input, context_df)
+    if send_pressed and user_query.strip():
+        st.session_state.chat_history.append(("user", user_query))
+        context_df = search_context(user_query)
+        answer = call_cohere_chat(user_query, context_df)
         st.session_state.chat_history.append(("bot", answer))
+        # No rerun needed, input auto-clears due to dynamic key
