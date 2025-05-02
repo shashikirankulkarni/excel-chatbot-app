@@ -8,7 +8,7 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 st.set_page_config(page_title="Smart Query Bot", layout="centered")
-st.title("💬 Smart Query Bot")
+st.title("💡Smart Query Bot")
 st.markdown("""
     <style>
     .footer {
