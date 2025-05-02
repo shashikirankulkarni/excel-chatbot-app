@@ -94,20 +94,14 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
         )
     st.markdown("<div style='clear:both;'></div>", unsafe_allow_html=True)
 
-    if "chat_input" not in st.session_state:
-        st.session_state.chat_input = ""
-
     col1, col2 = st.columns([4, 1])
     with col1:
-        st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
+        query = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
     with col2:
         if st.button("Send"):
-            query = st.session_state.chat_input.strip()
-            if query:
-                st.session_state.chat_history.append(("user", query))
-                context_df = search_context(query)
-                answer = call_cohere_chat(query, context_df)
+            if query.strip():
+                st.session_state.chat_history.append(("user", query.strip()))
+                context_df = search_context(query.strip())
+                answer = call_cohere_chat(query.strip(), context_df)
                 st.session_state.chat_history.append(("bot", answer))
-                # Instead of clearing the key, rerun and show "input complete"
-                st.session_state.chat_input = ""  # ❌ REMOVE this line
-                st.rerun()  # ✅ Rerun cleanly to reset
+                st.rerun()  # ✅ rerun resets the input field naturally
