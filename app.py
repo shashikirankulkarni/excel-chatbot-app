@@ -106,4 +106,3 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
             context_df = search_context(user_input)
             response = call_cohere_chat(user_input, context_df)
             st.session_state.chat_history.append(("bot", response))
-            st.experimental_rerun()
