@@ -136,3 +136,11 @@ if df is not None and {'Question', 'Answer'}.issubset(df.columns):
     if clear_clicked:
         st.session_state.chat_history = []
         st.rerun()  # no need to clear st.session_state.chat_input
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .st-emotion-cache-6qob1r {display: none;}  /* Hides GitHub corner banner */
+    </style>
+""", unsafe_allow_html=True)
